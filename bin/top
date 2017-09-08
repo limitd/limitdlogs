@@ -1,0 +1,72 @@
+#!/usr/bin/env node
+
+const _ = require('lodash');
+
+const Table     = require('cli-table2');
+const split2    = require('split2');
+const Transform = require('stream').Transform;
+const Writable  = require('stream').Writable;
+
+const stats = {};
+
+process.stdin
+  .pipe(split2())
+  .pipe(Transform({
+    objectMode: true,
+    transform(line, encoding, callback) {
+      callback(null, JSON.parse(line));
+    }
+  }))
+  .pipe(Writable({
+    objectMode: true,
+    write(line, encoding, callback) {
+      if (line.msg !== 'TAKE') { return callback(); }
+
+      const id = line.type + ' = ' + line.key;
+
+      stats[id] = stats[id] || {
+        type:   line.type,
+        key:    line.key,
+        count:  0,
+      };
+
+      stats[id].count++;
+      callback();
+    }
+  }));
+
+setInterval(() => {
+  if(Object.keys(stats).length === 0) { return; }
+
+  var table = new Table({
+    head: [
+      'type',
+      'key',
+      'count'
+    ],
+    style: {
+      compact: true,
+      head: [ 'blue' ]
+    }
+  });
+
+  const sorted = _(_.values(stats))
+    .sortBy('count')
+    .reverse();
+
+  sorted.slice(2000)
+        .forEach(s => {
+          delete stats[s.type + ' = ' + s.key];
+        });
+
+  sorted.slice(0, 20)
+        .map(s => {
+          const r =  _.values(s);
+          r[0] = r[0].slice(0, 10);
+          return r;
+        })
+        .forEach(r => table.push(r));
+
+  process.stdout.write('\033c');
+  console.log(table.toString());
+}, 1000);
