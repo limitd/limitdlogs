@@ -38,17 +38,17 @@ process.stdin
 setInterval(() => {
   if(Object.keys(stats).length === 0) { return; }
 
-  var table = new Table({
-    head: [
-      'type',
-      'key',
-      'count'
-    ],
-    style: {
-      compact: true,
-      head: [ 'blue' ]
-    }
-  });
+  // var table = new Table({
+  //   head: [
+  //     'type',
+  //     'key',
+  //     'count'
+  //   ],
+  //   style: {
+  //     compact: true,
+  //     head: [ 'blue' ]
+  //   }
+  // });
 
   const sorted = _(_.values(stats))
     .sortBy('count')
@@ -59,14 +59,20 @@ setInterval(() => {
           delete stats[s.type + ' = ' + s.key];
         });
 
-  sorted.slice(0, 20)
-        .map(s => {
-          const r =  _.values(s);
-          r[0] = r[0].slice(0, 10);
-          return r;
-        })
-        .forEach(r => table.push(r));
-
   process.stdout.write('\033c');
-  console.log(table.toString());
+
+  sorted.slice(0, 5)
+        .forEach(s => {
+          const r =  _.values(s);
+          console.log(`- type: ${r[0]}\n- key: ${r[1]}\n- count: ${r[2]}\n---`);
+          // r[0] = r[0]; //.slice(0, 10);
+          // r[1] = r[1];
+          // // r[1] = r[1].split('|').slice(1).join('.').slice(0, 20);
+          // return r;
+        });
+        // .forEach(r => table.push(r));
+
+  // console.log(new Error('test').stack) ;
+
+  // console.log(table.toString());
 }, 1000);
